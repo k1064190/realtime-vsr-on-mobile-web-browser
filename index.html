@@ -14,20 +14,23 @@
       <p>SRC</p>
       <video
         id="src_video"
-        width="1280"
-        height="720"
+        width="2560"
+        height="1440"
         crossorigin="anonymous"
         muted
-        src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        src="./360p.mp4"
       ></video>
+
+      <!--기존 https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 -->
     </div>
     <div>
       <p>DST</p>
       <div>
         <p>video</p>
-        <video id="dst_video" width="1280" height="720"></video>
+        <video id="dst_video" width="2560" height="1440"></video>
+        <canvas id="test" width="500" height="400"></canvas>
         <p>canvas</p>
-        <canvas id="exp_video" width="500" height="400"></canvas>
+        <canvas id="exp_video" width="2560" height="1440"></canvas>
       </div>
     </div>
     <div>
@@ -69,10 +72,10 @@
 
           let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
           await cap.read(mat);
-          console.log("cv_ori: ", mat.data);
+          console.log("cv_ori: ", srcVideo);
           let dst = new cv.Mat();
 
-          let dsize = new cv.Size(1960, 1080); // 1080p
+          let dsize = new cv.Size(2560, 1440); // 1080p
 
           cv.resize(mat, dst, dsize, 0, 0, cv.INTER_CUBIC);
           console.log("cv_dst: ", dst.data);
@@ -121,22 +124,24 @@
             //   buffer[i * 4 + 2] = grey;
             // }
 
-            console.log("stream_ori", buffer);
+            console.log("stream_ori", await videoFrame);
 
             let resized;
             function interpol() {
               // buffer가 프레임 여러개라서 그런 듯?
 
-              let src = cv.matFromArray(buffer.length, 1, cv.CV_8UC4, buffer);
+              let src = cv.matFromArray(368, 640, cv.CV_8UC4, buffer);
               console.log("stream_src", src.data);
-              let dst = new cv.Mat(1280, 720, cv.CV_8UC4);
+              // cv.imshow("test", src);
+              // let dst = new cv.Mat(1280, 720, cv.CV_8UC4);
+              let dst = new cv.Mat();
 
-              let dsize = new cv.Size(1280, 720); // 1080p
+              let dsize = new cv.Size(0, 0); // 1080p
 
-              cv.resize(src, dst, dsize, 0, 0, cv.INTER_CUBIC);
+              cv.resize(src, dst, dsize, 2, 2, cv.INTER_CUBIC);
               console.log("stream_Dst", dst.data);
               // resized = src.data;
-              resized = src.data;
+              resized = dst.data;
               src.delete();
               dst.delete();
             }
@@ -146,7 +151,7 @@
               timestamp: videoFrame.timestamp,
               // codedWidth: videoFrame.codedWidth,
               // codedHeight: videoFrame.codedHeight,
-              codedWidth: 1280,
+              codedWidth: 1280, // pixel값
               codedHeight: 720,
               format: videoFrame.format,
             };
