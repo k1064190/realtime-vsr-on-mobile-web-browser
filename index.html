@@ -7,13 +7,15 @@
   </head>
 
   <body style="border: black 1px solid; width: 100%">
-    <button onclick="start()">Start</button>
+    <h1 id="status">Loading...</h1>
+    <button id="startbutton" onclick="start()" hidden>Start</button>
+    <button id="pausebutton" onclick="pause()" hidden>Pause</button>
     <div>
       <p>SRC</p>
       <video
         id="src_video"
-        width="160px"
-        height="120px"
+        width="1280"
+        height="720"
         crossorigin="anonymous"
         muted
         src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
@@ -21,21 +23,68 @@
     </div>
     <div>
       <p>DST</p>
-      <video id="dst_video" width="500" height="300"></video>
+      <div>
+        <p>video</p>
+        <video id="dst_video" width="1280" height="720"></video>
+        <p>canvas</p>
+        <canvas id="exp_video" width="500" height="400"></canvas>
+      </div>
     </div>
     <div>
       <p>cv</p>
       <canvas id="canvasOutput"></canvas>
     </div>
     <script src="./src/opencv/utils.js" type="text/javascript"></script>
+    <script async src="./src/opencv/opencv.js" type="text/javascript"></script>
     <script>
+      var Module = {
+        // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
+        onRuntimeInitialized() {
+          console.log("READY!");
+          const startButton = document.getElementById("startbutton");
+          const pauseButton = document.getElementById("pausebutton");
+          const status = document.getElementById("status");
+          status.innerText = "START!!";
+
+          startButton.hidden = false;
+          pauseButton.hidden = false;
+        },
+      };
       const W = 320;
       const H = 240;
+      function pause() {
+        const srcVideo = document.getElementById("src_video");
+        const dstVideo = document.getElementById("dst_video");
 
+        srcVideo.pause();
+        dstVideo.pause();
+      }
       function start() {
         const srcVideo = document.getElementById("src_video");
         const dstVideo = document.getElementById("dst_video");
-        buildVSRPipleline(srcVideo, dstVideo, createTransform());
+        buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
+
+        async function interpol() {
+          let cap = new cv.VideoCapture(srcVideo);
+
+          let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
+          await cap.read(mat);
+          console.log("cv_ori: ", mat.data);
+          let dst = new cv.Mat();
+
+          let dsize = new cv.Size(1960, 1080); // 1080p
+
+          cv.resize(mat, dst, dsize, 0, 0, cv.INTER_CUBIC);
+          console.log("cv_dst: ", dst.data);
+          cv.imshow("exp_video", dst);
+
+          mat.delete();
+          dst.delete();
+          setTimeout(() => {
+            interpol();
+          }, 0);
+        }
+        setTimeout(() => interpol(), 0);
 
         srcVideo.play();
         dstVideo.play();
@@ -56,30 +105,55 @@
         dstVideo.srcObject = outStream;
       }
 
-      function createTransform() {
+      function createTransform(px, py) {
         return new TransformStream({
           async transform(videoFrame, controller) {
             const buffer = new Uint8Array(videoFrame.allocationSize());
             const layout = await videoFrame.copyTo(buffer);
             const l = buffer.length / 4;
-            console.log(buffer, layout);
-            for (let i = 0; i < l; i++) {
-              const grey =
-                (buffer[i * 4 + 0] + buffer[i * 4 + 1] + buffer[i * 4 + 2]) / 3;
+            // console.log(buffer, layout);
+            // for (let i = 0; i < l; i++) {
+            //   const grey =
+            //     (buffer[i * 4 + 0] + buffer[i * 4 + 1] + buffer[i * 4 + 2]) / 3;
 
-              buffer[i * 4 + 0] = grey;
-              buffer[i * 4 + 1] = grey;
-              buffer[i * 4 + 2] = grey;
+            //   buffer[i * 4 + 0] = grey;
+            //   buffer[i * 4 + 1] = grey;
+            //   buffer[i * 4 + 2] = grey;
+            // }
+
+            console.log("stream_ori", buffer);
+
+            let resized;
+            function interpol() {
+              // buffer가 프레임 여러개라서 그런 듯?
+
+              let src = cv.matFromArray(buffer.length, 1, cv.CV_8UC4, buffer);
+              console.log("stream_src", src.data);
+              let dst = new cv.Mat(1280, 720, cv.CV_8UC4);
+
+              let dsize = new cv.Size(1280, 720); // 1080p
+
+              cv.resize(src, dst, dsize, 0, 0, cv.INTER_CUBIC);
+              console.log("stream_Dst", dst.data);
+              // resized = src.data;
+              resized = src.data;
+              src.delete();
+              dst.delete();
             }
-
+            interpol();
+            // console.log("RES", resized);
             const init = {
               timestamp: videoFrame.timestamp,
-              codedWidth: videoFrame.codedWidth / 2,
-              codedHeight: videoFrame.codedHeight / 2,
+              // codedWidth: videoFrame.codedWidth,
+              // codedHeight: videoFrame.codedHeight,
+              codedWidth: 1280,
+              codedHeight: 720,
               format: videoFrame.format,
             };
 
-            const newFrame = new VideoFrame(buffer, init);
+            const newFrame = new VideoFrame(resized, init);
+
+            // const newFrame = new VideoFrame(buffer, init);
             videoFrame.close();
             controller.enqueue(newFrame);
           },
@@ -92,6 +166,5 @@
         return track;
       }
     </script>
-    <script async src="./src/opencv/opencv.js" type="text/javascript"></script>
   </body>
 </html>
