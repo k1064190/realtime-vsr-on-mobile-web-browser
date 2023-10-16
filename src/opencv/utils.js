@@ -27,7 +27,7 @@ function Utils(errorOutputId) {
       }
     });
     script.addEventListener("error", () => {
-      self.printError("Failed to load " + OPENCV_URL);
+      self.printError("Failed to load  " + OPENCV_URL);
     });
     script.src = OPENCV_URL;
     let node = document.getElementsByTagName("script")[0];

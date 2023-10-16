@@ -74,7 +74,7 @@
           console.log("cv_ori: ", srcVideo);
           let dst = new cv.Mat();
 
-          let dsize = new cv.Size(2560, 1440); // 1080p
+          let dsize = new cv.Size(1960, 1080);
 
           cv.resize(mat, dst, dsize, 0, 0, cv.INTER_CUBIC);
           console.log("cv_dst: ", dst.data);
