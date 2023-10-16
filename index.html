@@ -25,8 +25,8 @@
       <p>DST</p>
       <div>
         <p>video</p>
-        <video id="dst_video" width="2560" height="1440"></video>
-        <canvas id="test" width="500" height="400"></canvas>
+        <!-- <video id="dst_video" width="2560" height="1440"></video> -->
+
         <p>canvas</p>
         <canvas id="exp_video" width="2560" height="1440"></canvas>
       </div>
@@ -58,7 +58,7 @@
         const dstVideo = document.getElementById("dst_video");
 
         srcVideo.pause();
-        dstVideo.pause();
+        // dstVideo.pause();
       }
       function start() {
         const srcVideo = document.getElementById("src_video");
@@ -89,7 +89,7 @@
         setTimeout(() => interpol(), 0);
 
         srcVideo.play();
-        dstVideo.play();
+        // dstVideo.play();
       }
 
       function buildVSRPipleline(srcVideo, dstVideo, vsrTransformer) {
