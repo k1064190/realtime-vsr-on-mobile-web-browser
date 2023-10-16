@@ -18,10 +18,8 @@
         height="1440"
         crossorigin="anonymous"
         muted
-        src="./360p.mp4"
+        src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
       ></video>
-
-      <!--기존 https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 -->
     </div>
     <div>
       <p>DST</p>
@@ -65,7 +63,8 @@
       function start() {
         const srcVideo = document.getElementById("src_video");
         const dstVideo = document.getElementById("dst_video");
-        buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
+        //# interpolation만 사용한다면 stream api사용할 필요는 없는 듯 함.
+        // buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
 
         async function interpol() {
           let cap = new cv.VideoCapture(srcVideo);
@@ -114,51 +113,16 @@
             const buffer = new Uint8Array(videoFrame.allocationSize());
             const layout = await videoFrame.copyTo(buffer);
             const l = buffer.length / 4;
-            // console.log(buffer, layout);
-            // for (let i = 0; i < l; i++) {
-            //   const grey =
-            //     (buffer[i * 4 + 0] + buffer[i * 4 + 1] + buffer[i * 4 + 2]) / 3;
 
-            //   buffer[i * 4 + 0] = grey;
-            //   buffer[i * 4 + 1] = grey;
-            //   buffer[i * 4 + 2] = grey;
-            // }
-
-            console.log("stream_ori", await videoFrame);
-
-            let resized;
-            function interpol() {
-              // buffer가 프레임 여러개라서 그런 듯?
-
-              let src = cv.matFromArray(368, 640, cv.CV_8UC4, buffer);
-              console.log("stream_src", src.data);
-              // cv.imshow("test", src);
-              // let dst = new cv.Mat(1280, 720, cv.CV_8UC4);
-              let dst = new cv.Mat();
-
-              let dsize = new cv.Size(0, 0); // 1080p
-
-              cv.resize(src, dst, dsize, 2, 2, cv.INTER_CUBIC);
-              console.log("stream_Dst", dst.data);
-              // resized = src.data;
-              resized = dst.data;
-              src.delete();
-              dst.delete();
-            }
-            interpol();
-            // console.log("RES", resized);
             const init = {
               timestamp: videoFrame.timestamp,
-              // codedWidth: videoFrame.codedWidth,
-              // codedHeight: videoFrame.codedHeight,
-              codedWidth: 1280, // pixel값
-              codedHeight: 720,
+              codedWidth: videoFrame.codedWidth,
+              codedHeight: videoFrame.codedHeight,
+
               format: videoFrame.format,
             };
 
-            const newFrame = new VideoFrame(resized, init);
-
-            // const newFrame = new VideoFrame(buffer, init);
+            const newFrame = new VideoFrame(buffer, init);
             videoFrame.close();
             controller.enqueue(newFrame);
           },
