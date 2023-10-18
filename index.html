@@ -14,8 +14,8 @@
       <p>SRC</p>
       <video
         id="src_video"
-        width="2560"
-        height="1440"
+        width="256"
+        height="144"
         crossorigin="anonymous"
         muted
         src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
@@ -23,12 +23,13 @@
     </div>
     <div>
       <p>DST</p>
+      <a id="download_link" href="#">Download</a>
       <div>
         <p>video</p>
         <!-- <video id="dst_video" width="2560" height="1440"></video> -->
 
         <p>canvas</p>
-        <canvas id="exp_video" width="2560" height="1440"></canvas>
+        <canvas id="exp_video" width="256" height="144"></canvas>
       </div>
     </div>
     <div>
@@ -58,6 +59,7 @@
         const dstVideo = document.getElementById("dst_video");
 
         srcVideo.pause();
+        stopRecording();
         // dstVideo.pause();
       }
       function start() {
@@ -71,13 +73,13 @@
 
           let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
           await cap.read(mat);
-          console.log("cv_ori: ", srcVideo);
+          // console.log("cv_ori: ", srcVideo);
           let dst = new cv.Mat();
 
           let dsize = new cv.Size(1960, 1080);
 
           cv.resize(mat, dst, dsize, 0, 0, cv.INTER_CUBIC);
-          console.log("cv_dst: ", dst.data);
+          // console.log("cv_dst: ", dst.data);
           cv.imshow("exp_video", dst);
 
           mat.delete();
@@ -89,7 +91,66 @@
         setTimeout(() => interpol(), 0);
 
         srcVideo.play();
+        startRecording();
         // dstVideo.play();
+      }
+
+      // https://github.com/mganeko/videotrackreader_demo/blob/main/videotrackreader.html
+      let recorder = null;
+      let canvasStream = null;
+      function startRecording() {
+        if (recorder) {
+          console.warn('reacorder ALREADY started');
+          return;
+        }
+
+        const fps = 30;
+        const interval = 1000;
+        const canvas = document.getElementById("exp_video");
+        canvasStream = canvas.captureStream(fps);
+        recodingChunks = [];
+        recorder = new MediaRecorder(canvasStream);
+        recorder.ondataavailable = function (evt) {
+          recodingChunks.push(evt.data);
+        };
+        recorder.onstop = function (evt) {
+          console.log('Stop recording');
+          recorder = null;
+          buildRecordedVideo();
+          setupDownloadLink();
+        };
+
+        recorder.start(interval);
+        console.log('Start recording');
+      }
+
+
+      let videoBlobUrl = null;
+      function buildRecordedVideo() {
+        const videoBlob = new Blob(recodingChunks, { type: "video/mp4" });
+        videoBlobUrl = window.URL.createObjectURL(videoBlob);
+      }
+    
+      function setupDownloadLink() {
+        const anchor = document.getElementById('download_link');
+        anchor.download = 'recorded_reader.mp4'; // ファイル名
+        anchor.href = videoBlobUrl; // createObjecURL()で生成したURL
+      }
+
+      function stopRecording() {
+        if (recorder) {
+          recorder.stop();
+          stopMediaStream(canvasStream);
+          canvasStream = null;
+        }
+      }
+    
+      function stopMediaStream(stream) {
+        if (stream) {
+          stream.getTracks().forEach(track => {
+            track.stop()
+          });
+        }
       }
 
       function buildVSRPipleline(srcVideo, dstVideo, vsrTransformer) {
