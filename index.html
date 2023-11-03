@@ -12,20 +12,28 @@
     <button id="pausebutton" onclick="pause()" hidden>Pause</button>
     <div>
       <p>SRC</p>
-      <video
+      <!-- <video
         id="src_video"
         width="2560"
         height="1440"
         crossorigin="anonymous"
         muted
         src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      ></video> -->
+      <video
+        id="src_video"
+        width="2560"
+        height="1440"
+        crossorigin="anonymous"
+        muted
+        src="BigBuckBunny.mp4"
       ></video>
     </div>
     <div>
       <p>DST</p>
       <div>
         <p>video</p>
-        <!-- <video id="dst_video" width="2560" height="1440"></video> -->
+        <video id="dst_video" width="2560" height="1440"></video>
 
         <p>canvas</p>
         <canvas id="exp_video" width="2560" height="1440"></canvas>
@@ -58,26 +66,26 @@
         const dstVideo = document.getElementById("dst_video");
 
         srcVideo.pause();
-        // dstVideo.pause();
+        dstVideo.pause();
       }
       function start() {
         const srcVideo = document.getElementById("src_video");
         const dstVideo = document.getElementById("dst_video");
         //# interpolation만 사용한다면 stream api사용할 필요는 없는 듯 함.
-        // buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
+        buildVSRPipleline(srcVideo, dstVideo, createTransform());
 
         async function interpol() {
           let cap = new cv.VideoCapture(srcVideo);
 
           let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
           await cap.read(mat);
-          console.log("cv_ori: ", srcVideo);
+          // console.log("cv_ori: ", srcVideo);
           let dst = new cv.Mat();
 
           let dsize = new cv.Size(1960, 1080);
 
           cv.resize(mat, dst, dsize, 0, 0, cv.INTER_CUBIC);
-          console.log("cv_dst: ", dst.data);
+          // console.log("cv_dst: ", dst.data);
           cv.imshow("exp_video", dst);
 
           mat.delete();
@@ -89,16 +97,17 @@
         setTimeout(() => interpol(), 0);
 
         srcVideo.play();
-        // dstVideo.play();
+        dstVideo.play();
       }
 
       function buildVSRPipleline(srcVideo, dstVideo, vsrTransformer) {
         const srcTrack = getVideoTrack(srcVideo);
+        console.log(`track : ${srcTrack}`);
         const trackProcessor = new MediaStreamTrackProcessor({
           track: srcTrack,
         });
         const trackGenerator = new MediaStreamTrackGenerator({ kind: "video" });
-
+        
         trackProcessor.readable
           .pipeThrough(vsrTransformer)
           .pipeTo(trackGenerator.writable);
@@ -107,24 +116,30 @@
         dstVideo.srcObject = outStream;
       }
 
-      function createTransform(px, py) {
+      function createTransform() {
         return new TransformStream({
           async transform(videoFrame, controller) {
+
+            console.dir(`FRAME: ${videoFrame}`);
+
             const buffer = new Uint8Array(videoFrame.allocationSize());
             const layout = await videoFrame.copyTo(buffer);
             const l = buffer.length / 4;
+
 
             const init = {
               timestamp: videoFrame.timestamp,
               codedWidth: videoFrame.codedWidth,
               codedHeight: videoFrame.codedHeight,
-
+              
               format: videoFrame.format,
             };
 
             const newFrame = new VideoFrame(buffer, init);
-            videoFrame.close();
+            
+            
             controller.enqueue(newFrame);
+            videoFrame.close();
           },
         });
       }
