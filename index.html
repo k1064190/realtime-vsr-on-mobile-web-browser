@@ -12,22 +12,22 @@
     <button id="pausebutton" onclick="pause()" hidden>Pause</button>
     <div>
       <p>SRC</p>
-      <!-- <video
-        id="src_video"
-        width="2560"
-        height="1440"
-        crossorigin="anonymous"
-        muted
-        src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-      ></video> -->
       <video
         id="src_video"
         width="2560"
         height="1440"
         crossorigin="anonymous"
         muted
-        src="BigBuckBunny.mp4"
+        src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
       ></video>
+      <!-- <video
+        id="src_video"
+        width="2560"
+        height="1440"
+        crossorigin="anonymous"
+        muted
+        src="BigBuckBunny.mp4"
+      ></video> -->
     </div>
     <div>
       <p>DST</p>
@@ -126,17 +126,28 @@
             const layout = await videoFrame.copyTo(buffer);
             const l = buffer.length / 4;
 
-
+            console.log(`format: ${videoFrame.format}`)
             const init = {
               timestamp: videoFrame.timestamp,
               codedWidth: videoFrame.codedWidth,
               codedHeight: videoFrame.codedHeight,
               
-              format: videoFrame.format,
+              format: videoFrame.format, // NV12
             };
+
+            for (let i=0;i<init.codedWidth*init.codedHeight/2;i++){
+              
+                // let offset = y*init.codedWidth+x;
+                let base = init.codedHeight * init.codedWidth; // 이 공간이 y공간.
+                buffer[base+i] = 127; // 8bit의 절반. 이 공간이 u,v공간.
+
+              
+            }
+
 
             const newFrame = new VideoFrame(buffer, init);
             
+
             
             controller.enqueue(newFrame);
             videoFrame.close();
