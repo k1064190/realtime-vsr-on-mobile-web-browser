@@ -9,7 +9,6 @@ const txt_path = './txt_model/model_16.txt';
 async function loadModel(path) {
     console.log("Trying to load model from " + path);
     const model = await tf.loadLayersModel(`file://${path}/model.json`);
-    model.summary();
     return model;
 }
 
