@@ -80,6 +80,7 @@
         let dst_mat = new cv.Mat(srcVideo.height*4, srcVideo.width*4, cv.CV_8UC3);
 
         async function interpol() {
+          const start_time = Date.now();
           await cap.read(mat);
           // reshape rgb_mat to tensor
           cv.cvtColor(mat, rgb_mat, cv.COLOR_RGBA2RGB);
@@ -102,28 +103,41 @@
           // // console.log("cv_dst: ", dst.data);
           // cv.imshow("exp_video", dst);
 
-          // Upscape with model
-          let [dst, hidden] = await model.predict([prev_img, tensor, prev_hidden]);
+          // Upscale with model, tf.tidy for VRAM leak prevention
+          let cur_hidden = tf.tidy(() => {
+            [dst, hidden] = model.predict([prev_img, tensor, prev_hidden]);
+
+            // clip dst to 0~255
+            dst = tf.clipByValue(dst, 0, 255);
+            dst = tf.cast(dst, 'int32');
+
+            // dst tensor to dst_mat
+            dst_mat.data.set(dst.dataSync());
+            cv.imshow("exp_video", dst_mat);
+
+            return hidden;
+          });
+          // [dst, hidden] = model.predict([prev_img, tensor, prev_hidden]);
+          // dst = tf.clipByValue(dst, 0, 255);
+          // dst = tf.cast(dst, 'int32');
+          //
+          // dst_mat.data.set(dst.dataSync());
+          // cv.imshow("exp_video", dst_mat);
+          // tf.dispose(dst);
+
           // console.log("dst.shape: ", dst.shape);
           // console.log("hidden.shape: ", hidden.shape);
-          // clip dst to 0~255
-          dst = tf.clipByValue(dst, 0, 255);
-          dst = tf.cast(dst, 'int32');
 
-          // dst tensor to mat
-          dst_mat.data.set(dst.dataSync());
-
-          cv.imshow("exp_video", dst_mat);
-
+          // tf.disposeVariables();
           tf.dispose(prev_img);
           tf.dispose(prev_hidden);
-          tf.dispose(dst);
 
           prev_img = tensor;
-          prev_hidden = hidden;
+          prev_hidden = cur_hidden;
 
           n_frames += 1;
 
+          console.log(`runtime=${Date.now() - start_time}`);
           srcVideo.requestVideoFrameCallback(interpol);
         }
 
