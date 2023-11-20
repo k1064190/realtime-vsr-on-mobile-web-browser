@@ -8,8 +8,8 @@
 
   <body style="border: black 1px solid; width: 100%">
     <h1 id="status">Loading...</h1>
-    <button id="startbutton" onclick="start()" hidden>Start</button>
-    <button id="pausebutton" onclick="pause()" hidden>Pause</button>
+    <button id="startbutton" hidden>Start</button>
+    <button id="pausebutton" hidden>Pause</button>
     <div>
       <p>SRC</p>
       <video
@@ -28,15 +28,17 @@
         crossorigin="anonymous"
         muted
         src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-      ></video>
-      <!-- <video
+      ></video> -->
+
+      <!--<video
         id="src_video"
         width="2560"
         height="1440"
         crossorigin="anonymous"
         muted
         src="BigBuckBunny.mp4"
-      ></video> -->
+      ></video>
+      -->
     </div>
     <div>
       <p>DST</p>
@@ -53,7 +55,12 @@
       <canvas id="canvasOutput"></canvas>
     </div>
     <script src="./src/opencv/utils.js" type="text/javascript"></script>
-    <script async src="./src/opencv/opencv.js" type="text/javascript"></script>
+    <script
+      id="OpenCV"
+      async
+      src="./src/opencv/opencv.js"
+      type="text/javascript"
+    ></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
     <script src="./test/txt_model/model_16.js" type="text/javascript"></script>
     <script
@@ -61,171 +68,6 @@
       type="text/javascript"
     ></script>
     <script src="./test/model_from_js.js" type="text/javascript"></script>
-    <script>
-      // var Module = {
-      //   // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
-      //   onRuntimeInitialized() {
-      console.log('READY!');
-      const startButton = document.getElementById('startbutton');
-      const pauseButton = document.getElementById('pausebutton');
-      const status = document.getElementById('status');
-      status.innerText = 'START!!';
-
-      startButton.hidden = false;
-      pauseButton.hidden = false;
-      //   },
-      // };
-      const W = 320;
-      const H = 180;
-      function pause() {
-        const srcVideo = document.getElementById('src_video');
-        const dstVideo = document.getElementById('dst_video');
-
-        srcVideo.pause();
-        dstVideo.pause();
-      }
-      async function start() {
-        const srcVideo = document.getElementById('src_video');
-        const dstVideo = document.getElementById('dst_video');
-        //# interpolation만 사용한다면 stream api사용할 필요는 없는 듯 함.
-        // buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
-
-        let prev_img = null;
-        let prev_hidden = tf.zeros([1, 180, 320, 16]);
-        let n_frames = 0;
-        let cap = new cv.VideoCapture(srcVideo);
-        let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
-        let rgb_mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC3);
-        let dst_mat = new cv.Mat(
-          srcVideo.height * 4,
-          srcVideo.width * 4,
-          cv.CV_8UC3
-        );
-
-        async function interpol() {
-          const start_time = Date.now();
-          await cap.read(mat);
-          // reshape rgb_mat to tensor
-          cv.cvtColor(mat, rgb_mat, cv.COLOR_RGBA2RGB);
-
-          // rgb_mat to tensor with int32
-          let tensor = tf.tensor(
-            rgb_mat.data,
-            [rgb_mat.rows, rgb_mat.cols, 3],
-            'int32'
-          );
-          // [180, 320, 3] -> [1, 180, 320, 3]
-          tensor = tf.expandDims(tensor, 0);
-          if (n_frames === 0) {
-            prev_img = tensor;
-          }
-
-          // console.log("tensor.shape: ", tensor.shape);
-          // console.log("prev_img.shape: ", prev_img.shape);
-          // console.log("prev_hidden.shape: ", prev_hidden.shape);
-
-          // let dst = new cv.Mat();
-          // let dsize = new cv.Size(720, 360);
-          // cv.resize(mat, dst, dsize, 0, 0, cv.INTER_CUBIC);
-          // // console.log("cv_dst: ", dst.data);
-          // cv.imshow("exp_video", dst);
-
-          // Upscale with model, tf.tidy for VRAM leak prevention
-          let cur_hidden = tf.tidy(() => {
-            [dst, hidden] = model.predict([prev_img, tensor, prev_hidden]);
-
-            // clip dst to 0~255
-            dst = tf.clipByValue(dst, 0, 255);
-            dst = tf.cast(dst, 'int32');
-
-            // dst tensor to dst_mat
-            dst_mat.data.set(dst.dataSync());
-            cv.imshow('exp_video', dst_mat);
-
-            return hidden;
-          });
-          // [dst, hidden] = model.predict([prev_img, tensor, prev_hidden]);
-          // dst = tf.clipByValue(dst, 0, 255);
-          // dst = tf.cast(dst, 'int32');
-          //
-          // dst_mat.data.set(dst.dataSync());
-          // cv.imshow("exp_video", dst_mat);
-          // tf.dispose(dst);
-
-          // console.log("dst.shape: ", dst.shape);
-          // console.log("hidden.shape: ", hidden.shape);
-
-          // tf.disposeVariables();
-          tf.dispose(prev_img);
-          tf.dispose(prev_hidden);
-
-          prev_img = tensor;
-          prev_hidden = cur_hidden;
-
-          n_frames += 1;
-
-          console.log(`runtime=${Date.now() - start_time}`);
-          srcVideo.requestVideoFrameCallback(interpol);
-        }
-
-        srcVideo.play();
-        srcVideo.requestVideoFrameCallback(interpol);
-        // dstVideo.play();
-      }
-
-      function buildVSRPipleline(srcVideo, dstVideo, vsrTransformer) {
-        const srcTrack = getVideoTrack(srcVideo);
-        console.log(`track : ${srcTrack}`);
-        const trackProcessor = new MediaStreamTrackProcessor({
-          track: srcTrack,
-        });
-        const trackGenerator = new MediaStreamTrackGenerator({ kind: 'video' });
-
-        trackProcessor.readable
-          .pipeThrough(vsrTransformer)
-          .pipeTo(trackGenerator.writable);
-
-        const outStream = new MediaStream([trackGenerator]);
-        dstVideo.srcObject = outStream;
-      }
-
-      function createTransform() {
-        return new TransformStream({
-          async transform(videoFrame, controller) {
-            console.dir(`FRAME: ${videoFrame}`);
-
-            const buffer = new Uint8Array(videoFrame.allocationSize());
-            const layout = await videoFrame.copyTo(buffer);
-            const l = buffer.length / 4;
-
-            console.log(`format: ${videoFrame.format}`);
-            const init = {
-              timestamp: videoFrame.timestamp,
-              codedWidth: videoFrame.codedWidth,
-              codedHeight: videoFrame.codedHeight,
-
-              format: videoFrame.format, // NV12
-            };
-
-            for (let i = 0; i < (init.codedWidth * init.codedHeight) / 2; i++) {
-              // let offset = y*init.codedWidth+x;
-              let base = init.codedHeight * init.codedWidth; // 이 공간이 y공간.
-              buffer[base + i] = 127; // 8bit의 절반. 이 공간이 u,v공간.
-            }
-
-            const newFrame = new VideoFrame(buffer, init);
-
-            controller.enqueue(newFrame);
-            videoFrame.close();
-          },
-        });
-      }
-
-      function getVideoTrack(video) {
-        const [track] = video.captureStream().getVideoTracks();
-        video.onended = (evt) => track.stop();
-        return track;
-      }
-    </script>
+    <script src="./index.js" type="text/javascript"></script>
   </body>
 </html>
