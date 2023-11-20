@@ -1,0 +1,10 @@
+#h1h1 {
+  border: 2px red solid;
+}
+#exp_video {
+  border: 2px red dotted;
+}
+#body {
+  display: flex;
+  flex-direction: column;
+}

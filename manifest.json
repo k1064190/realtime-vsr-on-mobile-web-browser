@@ -1,18 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "Reading time",
+  "name": "Suer Resolution",
   "version": "1.0",
   "description": "Add the reading time to Chrome Extension documentation articles",
   "icons": {
-    "16": "./images/resolution-16.png"
+    "16": "./icon/resolution-16.png"
   },
   "content_scripts": [
     {
       "js": ["./extension/content.js"],
+      "css": ["./extension/style.css"],
       "matches": [
+        "http://localhost:8000/*",
+        "https://upload.wikimedia.org/*",
+        "https://developer.mozilla.org/*",
+        "https://www.youtube.com/*",
         "https://developer.chrome.com/docs/extensions/*",
         "https://developer.chrome.com/docs/webstore/*"
       ]
     }
-  ]
+  ],
+
+  "action": {
+    "default_popup": "extension/popup.html"
+  }
 }
