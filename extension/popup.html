@@ -2,13 +2,29 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="font-src 'self' 'unsafe-inline' data:; img-src 'self' data:; style-src 'self' 'unsafe-inline' data:; script-src 'unsafe-eval' 'unsafe-inline' data:; default-src 'self' localhost:*"
+    />
     <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
     <h1>과연..!</h1>
-    <div id="Frame"></div>
-    <script src="./src/opencv/utils.js" type="text/javascript"></script>
-    <script async src="./src/opencv/opencv.js" type="text/javascript"></script>
-    <script src="popup.js"></script>
+    <button id="startbutton" hidden>Start</button>
+    <button id="pausebutton" hidden>Pause</button>
+    <div id="Frame">
+      <canvas id="canvasOutput"></canvas>
+    </div>
+    <script src="../src/opencv/utils.js" type="text/javascript"></script>
+    <script async src="../src/opencv/opencv.js" type="text/javascript"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="../test/txt_model/model_16.js" type="text/javascript"></script>
+    <script
+      src="../models/rrn_based_frontend.js"
+      type="text/javascript"
+    ></script>
+    <script src="../test/model_from_js.js" type="text/javascript"></script> -->
+    <!-- <script src="./popup.js" type="module"></script> -->
   </body>
 </html>

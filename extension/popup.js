@@ -1,11 +1,14 @@
-const backgroundFrame = document.getElementById('Frame');
+// import '../src/opencv/utils.js';
+// import '../src/opencv/opencv.js';
 
-const popCanvas = document.createElement('canvas');
+// const backgroundFrame = document.getElementById('Frame');
 
-backgroundFrame.appendChild(popCanvas);
+// const popCanvas = document.createElement('canvas');
 
-const run = () => {
-  popCanvas;
-};
+// backgroundFrame.appendChild(popCanvas);
 
-popCanvas.onload = run;
+// const run = () => {
+//   popCanvas;
+// };
+
+// popCanvas.onload = run;

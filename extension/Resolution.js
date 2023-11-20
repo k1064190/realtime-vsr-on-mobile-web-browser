@@ -1,4 +1,40 @@
-const resolution = (srcVideo) => {
+const startButton = document.getElementById('startbutton');
+
+const pauseButton = document.getElementById('pausebutton');
+
+startButton.hidden = false;
+pauseButton.hidden = false;
+//   },
+// };
+const W = 320;
+const H = 180;
+startButton.addEventListener('click', () => {
+  start();
+});
+pauseButton.addEventListener('click', () => {
+  pause();
+});
+
+function pause() {
+  const srcVideo = document.getElementById('src_video');
+
+  const dstVideo = document.getElementById('dst_video');
+
+  srcVideo.pause();
+  ////
+  if (srcVideo.className === '') {
+    srcVideo.classList.add('stop');
+  } else {
+    srcVideo.classList.replace('play', 'stop');
+  }
+
+  dstVideo.pause();
+}
+async function start() {
+  const srcVideo = document.getElementById('src_video');
+  console.log('asdf', srcVideo);
+  const dstVideo = document.getElementById('dst_video');
+
   let prev_img = null;
   let prev_hidden = tf.zeros([1, 180, 320, 16]);
   let n_frames = 0;
@@ -74,6 +110,14 @@ const resolution = (srcVideo) => {
   }
 
   srcVideo.play();
+  //// 클래스로 상태 업데이트
+  if (srcVideo.className === '') {
+    srcVideo.classList.add('play');
+  } else {
+    srcVideo.classList.replace('stop', 'play');
+  }
+
+  // srcVideo.play();
   srcVideo.requestVideoFrameCallback(interpol);
   // dstVideo.play();
-};
+}

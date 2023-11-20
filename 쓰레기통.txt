@@ -1,0 +1,24 @@
+ "content_scripts": [
+      {
+        "js": ["./extension/content.js"],
+        "css": ["./extension/style.css"],
+        "matches": [
+          "http://localhost:8000/*",
+          "https://upload.wikimedia.org/*",
+          "https://developer.mozilla.org/*",
+          "https://www.youtube.com/*",
+          "https://developer.chrome.com/docs/extensions/*",
+          "https://developer.chrome.com/docs/webstore/*"
+        ]
+      }
+    ],
+
+
+  "action": {
+    "default_popup": "extension/popup.html"
+  },
+  
+      "background": {
+    "service_worker": "./extension/service-worker.js",
+    "type": "module"
+  }

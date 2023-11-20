@@ -8,8 +8,8 @@
 
   <body style="border: black 1px solid; width: 100%">
     <h1 id="status">Loading...</h1>
-    <button id="startbutton" hidden>Start</button>
-    <button id="pausebutton" hidden>Pause</button>
+    <!-- <button id="startbutton" hidden>Start</button>
+    <button id="pausebutton" hidden>Pause</button> -->
     <div>
       <p>SRC</p>
       <video
@@ -34,7 +34,14 @@
       <p>cv</p>
       <canvas id="canvasOutput"></canvas>
     </div>
-    <script src="./src/opencv/utils.js" type="text/javascript"></script>
+    <div width="4000px">
+      <iframe
+        src="extension/iframeContent.html"
+        width="4000px"
+        height="2000px"
+      ></iframe>
+    </div>
+    <!-- <script src="./src/opencv/utils.js" type="text/javascript"></script>
     <script
       id="OpenCV"
       async
@@ -48,6 +55,6 @@
       type="text/javascript"
     ></script>
     <script src="./test/model_from_js.js" type="text/javascript"></script>
-    <script src="./index.js" type="text/javascript"></script>
+    <script src="./index.js" type="text/javascript"></script> -->
   </body>
 </html>
