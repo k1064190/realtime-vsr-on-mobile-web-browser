@@ -1,5 +1,5 @@
 function model_from_js() {
-    const model = build_elsr(5);
+    const model = build_elsr(scale);
 
     let tensors = [];
 

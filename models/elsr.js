@@ -1,7 +1,3 @@
-const height = 144;
-const width = 256;
-const scale = 720 / height;
-
 class DepthToSpace extends tf.layers.Layer {
     constructor(upscale_factor) {
         super({});
