@@ -1,7 +1,7 @@
 const startButton = document.getElementById('startbutton');
 
 const pauseButton = document.getElementById('pausebutton');
-
+console.log(startButton);
 startButton.hidden = false;
 pauseButton.hidden = false;
 //   },
@@ -9,6 +9,7 @@ pauseButton.hidden = false;
 const W = 320;
 const H = 180;
 startButton.addEventListener('click', () => {
+  console.log('START');
   start();
 });
 pauseButton.addEventListener('click', () => {
@@ -16,9 +17,9 @@ pauseButton.addEventListener('click', () => {
 });
 
 function pause() {
-  const srcVideo = document.getElementById('src_video');
+  const srcVideo = document.querySelector('video'); //.getElementById('src_video');
 
-  const dstVideo = document.getElementById('dst_video');
+  // const dstVideo = document.getElementById('dst_video');
 
   srcVideo.pause();
   ////
@@ -28,12 +29,12 @@ function pause() {
     srcVideo.classList.replace('play', 'stop');
   }
 
-  dstVideo.pause();
+  // dstVideo.pause();
 }
 async function start() {
-  const srcVideo = document.getElementById('src_video');
-  console.log('asdf', srcVideo);
-  const dstVideo = document.getElementById('dst_video');
+  const srcVideo = document.querySelector('video'); //.getElementById('src_video');
+  console.log('tf', tf);
+  // const dstVideo = document.getElementById('dst_video');
 
   let prev_img = null;
   let prev_hidden = tf.zeros([1, 180, 320, 16]);
