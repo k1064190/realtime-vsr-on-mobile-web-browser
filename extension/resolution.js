@@ -1,3 +1,4 @@
+// 파일명 바꿈.
 const startButton = document.getElementById('startbutton');
 
 const pauseButton = document.getElementById('pausebutton');
