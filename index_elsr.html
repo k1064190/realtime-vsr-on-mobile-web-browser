@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Video test page</title>
+  </head>
+
+  <body style="border: black 1px solid; width: 100%">
+    <h1 id="status">Loading...</h1>
+    <button id="startbutton" onclick="start()" hidden>Start</button>
+    <button id="pausebutton" onclick="pause()" hidden>Pause</button>
+    <div>
+      <p>SRC</p>
+      <video
+        id="src_video"
+        width="256"
+        height="144"
+        crossorigin="anonymous"
+        muted
+        controls
+        src="https://drive.google.com/uc?export=download&id=1GqxWt8u-PpkrU00koaU5Y08sp1CFqN_v"
+      ></video>
+    </div>
+    <div>
+      <p>DST</p>
+      <div>
+        <p>video</p>
+        <!-- <video id="dst_video" width="2560" height="1440"></video> -->
+
+        <p>canvas</p>
+        <canvas id="exp_video" width="1280" height="720"></canvas>
+      </div>
+    </div>
+    <div>
+      <p>cv</p>
+      <canvas id="canvasOutput"></canvas>
+    </div>
+    <script src="./src/opencv/utils.js" type="text/javascript"></script>
+    <script async src="./src/opencv/opencv.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+<!--    <script src="./test/js_model/model_16.js" type="text/javascript"></script>-->
+    <script src="./test/js_model/elsr_144.js" type="text/javascript"></script>
+<!--    <script src="./models/rrn_based_frontend.js" type="text/javascript"></script>-->
+    <script src="./models/elsr.js" type="text/javascript"></script>
+    <script src="./test/model_from_js_new.js" type="text/javascript"></script>
+    <script>
+      // var Module = {
+      //   // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
+      //   onRuntimeInitialized() {
+          console.log("READY!");
+          const startButton = document.getElementById("startbutton");
+          const pauseButton = document.getElementById("pausebutton");
+          const status = document.getElementById("status");
+          status.innerText = "START!!";
+
+          startButton.hidden = false;
+          pauseButton.hidden = false;
+      //   },
+      // };
+      const W = 256;
+      const H = 144;
+      function pause() {
+        const srcVideo = document.getElementById("src_video");
+        const dstVideo = document.getElementById("dst_video");
+
+        srcVideo.pause();
+        // dstVideo.pause();
+      }
+      async function start() {
+        const srcVideo = document.getElementById("src_video");
+        const dstVideo = document.getElementById("dst_video");
+        //# interpolation만 사용한다면 stream api사용할 필요는 없는 듯 함.
+        // buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
+
+        let n_frames = 0;
+        let cap = new cv.VideoCapture(srcVideo);
+        let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
+        let rgb_mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC3);
+        let dst_mat = new cv.Mat(srcVideo.height*5, srcVideo.width*5, cv.CV_8UC3);
+
+        async function interpol() {
+          const start_time = Date.now();
+          await cap.read(mat);
+          // reshape rgb_mat to tensor
+          cv.cvtColor(mat, rgb_mat, cv.COLOR_RGBA2RGB);
+
+          // rgb_mat to tensor with int32
+          let tensor = tf.tensor(rgb_mat.data, [rgb_mat.rows, rgb_mat.cols, 3], 'int32');
+          // [180, 320, 3] -> [1, 180, 320, 3]
+          tensor = tf.expandDims(tensor, 0);
+          console.log("tensor.shape: ", tensor.shape);
+
+          // Upscale with model, tf.tidy for VRAM leak prevention
+          tf.tidy(() => {
+            sr = model.predict(tensor);
+
+            // clip dst to 0~255
+            sr = tf.clipByValue(sr, 0, 255);
+            sr = tf.cast(sr, 'int32');
+
+            // dst tensor to dst_mat
+            dst_mat.data.set(sr.dataSync());
+            cv.imshow("exp_video", dst_mat);
+          });
+
+          tensor.dispose();
+
+          n_frames += 1;
+
+          console.log(`runtime=${Date.now() - start_time}`);
+          srcVideo.requestVideoFrameCallback(interpol);
+        }
+
+        srcVideo.play();
+        srcVideo.requestVideoFrameCallback(interpol);
+        // dstVideo.play();
+      }
+
+      function buildVSRPipleline(srcVideo, dstVideo, vsrTransformer) {
+        const srcTrack = getVideoTrack(srcVideo);
+        const trackProcessor = new MediaStreamTrackProcessor({
+          track: srcTrack,
+        });
+        const trackGenerator = new MediaStreamTrackGenerator({ kind: "video" });
+
+        trackProcessor.readable
+          .pipeThrough(vsrTransformer)
+          .pipeTo(trackGenerator.writable);
+
+        const outStream = new MediaStream([trackGenerator]);
+        dstVideo.srcObject = outStream;
+      }
+
+      function createTransform(px, py) {
+        return new TransformStream({
+          async transform(videoFrame, controller) {
+            const buffer = new Uint8Array(videoFrame.allocationSize());
+            const layout = await videoFrame.copyTo(buffer);
+            const l = buffer.length / 4;
+
+            const init = {
+              timestamp: videoFrame.timestamp,
+              codedWidth: videoFrame.codedWidth,
+              codedHeight: videoFrame.codedHeight,
+
+              format: videoFrame.format,
+            };
+
+            const newFrame = new VideoFrame(buffer, init);
+            videoFrame.close();
+            controller.enqueue(newFrame);
+          },
+        });
+      }
+
+      function getVideoTrack(video) {
+        const [track] = video.captureStream().getVideoTracks();
+        video.onended = (evt) => track.stop();
+        return track;
+      }
+    </script>
+  </body>
+</html>
