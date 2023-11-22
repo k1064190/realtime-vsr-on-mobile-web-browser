@@ -34,7 +34,7 @@ function pause() {
 }
 async function start() {
   const srcVideo = document.querySelector('video'); //.getElementById('src_video');
-  console.log('tf', tf);
+  console.log(srcVideo.videoHeight); // 해상도.
   // const dstVideo = document.getElementById('dst_video');
 
   let prev_img = null;
