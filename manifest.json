@@ -11,7 +11,8 @@
     "default_icon": {
       "16": "./icon/resolution-16.png",
       "128": "./icon/resolution-128.png"
-    }
+    },
+    "default_popup": "popup.html"
   },
   "background": {
     "service_worker": "./extension/service-worker.js"
