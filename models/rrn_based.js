@@ -36,6 +36,34 @@ class DepthToSpace extends tf.layers.Layer {
     }
 }
 
+class ClipByValue extends tf.layers.Layer {
+    constructor() {
+        super({});
+    }
+
+    // call(input) {
+    //     return tf.depthToSpace(input, this.block_size, "NHWC");
+    // }
+    call(inputs) {
+        return tf.tidy(() => {
+            const [input] = inputs;
+            return tf.clipByValue(input, 0, 255);
+        });
+    }
+
+    computeOutputShape(inputShape) {
+        const [batch, height, width, inDepth] = inputShape;
+        const output_height = (height == null) ? null : height * this.block_size;
+        const output_width = (width == null) ? null : width * this.block_size;
+        const outDepth = inDepth / (this.block_size * this.block_size);
+        return [batch, output_height, output_width, outDepth];
+    }
+
+    static get className() {
+        return 'ClipByValue';
+    }
+}
+
 class BilinearResize extends tf.layers.Layer {
     constructor() {
         super({});
@@ -86,7 +114,7 @@ function build_residual_block(base_channels) {
 
 
 // tfjs model
-function build_rrn(back_channels=3, cur_channels=3, base_channels=16) {
+function build_rrn(back_channels=3, cur_channels=3, base_channels=16, training=true) {
     in_channels = 3;
     out_channels = 3;
 
@@ -97,7 +125,7 @@ function build_rrn(back_channels=3, cur_channels=3, base_channels=16) {
     const h = x1.shape[1];
     const w = x1.shape[2];
 
-    let out = tf.layers.concatenate().apply([x1, x2, hidden]);
+    let out = tf.layers.concatenate({axis: -1}).apply([x1, x2, hidden]);
 
     // first conv
     out = tf.layers.conv2d({
@@ -138,9 +166,14 @@ function build_rrn(back_channels=3, cur_channels=3, base_channels=16) {
     let bilinear = new BilinearResize().apply(x2);
     out = tf.layers.add().apply([out, bilinear]);
 
+    if (training) {
+
+    }
+
     return tf.model({inputs: [x1, x2, hidden], outputs: [out, output_hidden]});
 }
 
 tf.serialization.registerClass(DepthToSpace);
 tf.serialization.registerClass(BilinearResize);
+tf.serialization.registerClass(ClipByValue);
 module.exports = build_rrn;

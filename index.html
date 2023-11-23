@@ -83,7 +83,8 @@
         let dst_mat = new cv.Mat(srcVideo.height*4, srcVideo.width*4, cv.CV_8UC3);
 
         async function interpol() {
-          const start_time = Date.now();
+          let start_time = Date.now();
+          let mid_time;
           await cap.read(mat);
           // reshape rgb_mat to tensor
           cv.cvtColor(mat, rgb_mat, cv.COLOR_RGBA2RGB);
@@ -110,26 +111,17 @@
           let cur_hidden = tf.tidy(() => {
             [dst, hidden] = model.predict([prev_img, tensor, prev_hidden]);
 
+            // console.log("Until predict: ", Date.now() - start_time);
+            // mid_time = Date.now();
             // clip dst to 0~255
             dst = tf.clipByValue(dst, 0, 255);
-            dst = tf.cast(dst, 'int32');
 
             // dst tensor to dst_mat
             dst_mat.data.set(dst.dataSync());
             cv.imshow("exp_video", dst_mat);
-
+            // console.log("Until imshow: ", Date.now() - start_time);
             return hidden;
           });
-          // [dst, hidden] = model.predict([prev_img, tensor, prev_hidden]);
-          // dst = tf.clipByValue(dst, 0, 255);
-          // dst = tf.cast(dst, 'int32');
-          //
-          // dst_mat.data.set(dst.dataSync());
-          // cv.imshow("exp_video", dst_mat);
-          // tf.dispose(dst);
-
-          // console.log("dst.shape: ", dst.shape);
-          // console.log("hidden.shape: ", hidden.shape);
 
           // tf.disposeVariables();
           tf.dispose(prev_img);

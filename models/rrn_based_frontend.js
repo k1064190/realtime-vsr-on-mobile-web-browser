@@ -93,7 +93,7 @@ function build_rrn(back_channels=3, cur_channels=3, base_channels=16) {
     const h = x1.shape[1];
     const w = x1.shape[2];
 
-    let out = tf.layers.concatenate().apply([x1, x2, hidden]);
+    let out = tf.layers.concatenate({axis: -1}).apply([x1, x2, hidden]);
 
     // first conv
     out = tf.layers.conv2d({

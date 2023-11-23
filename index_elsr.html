@@ -19,7 +19,7 @@
         crossorigin="anonymous"
         muted
         controls
-        src="http://localhost:1337/example.mp4"
+        src="./example.mp4"
       ></video>
     </div>
     <div>
@@ -42,9 +42,7 @@
     <script src="./src/opencv/utils.js" type="text/javascript"></script>
     <script async src="./src/opencv/opencv.js" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
-<!--    <script src="./test/js_model/model_16.js" type="text/javascript"></script>-->
     <script src="./test/js_model/elsr_144.js" type="text/javascript"></script>
-<!--    <script src="./models/rrn_based_frontend.js" type="text/javascript"></script>-->
     <script src="./models/elsr.js" type="text/javascript"></script>
     <script src="./test/model_from_js_new.js" type="text/javascript"></script>
     <script>
@@ -80,7 +78,7 @@
         let cap = new cv.VideoCapture(srcVideo);
         let mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC4);
         let rgb_mat = new cv.Mat(srcVideo.height, srcVideo.width, cv.CV_8UC3);
-        let dst_mat = new cv.Mat(srcVideo.height*5, srcVideo.width*5, cv.CV_8UC3);
+        let dst_mat = new cv.Mat(srcVideo.height*scale, srcVideo.width*scale, cv.CV_8UC3);
 
         async function interpol() {
           const start_time = Date.now();
@@ -92,7 +90,7 @@
           let tensor = tf.tensor(rgb_mat.data, [rgb_mat.rows, rgb_mat.cols, 3], 'int32');
           // [180, 320, 3] -> [1, 180, 320, 3]
           tensor = tf.expandDims(tensor, 0);
-          console.log("tensor.shape: ", tensor.shape);
+          // console.log("tensor.shape: ", tensor.shape);
 
           // Upscale with model, tf.tidy for VRAM leak prevention
           tf.tidy(() => {
@@ -100,7 +98,6 @@
 
             // clip dst to 0~255
             sr = tf.clipByValue(sr, 0, 255);
-            sr = tf.cast(sr, 'int32');
 
             // dst tensor to dst_mat
             dst_mat.data.set(sr.dataSync());
