@@ -19,7 +19,7 @@
         crossorigin="anonymous"
         muted
         controls
-        src="./example360.mp4"
+        src='./example360.mp4'
       ></video>
     </div>
     <div>
@@ -73,6 +73,8 @@
       async function start() {
         const srcVideo = document.getElementById("src_video");
         const dstVideo = document.getElementById("dst_video");
+        const expVideo = document.getElementById("exp_video");
+        const ctx = expVideo.getContext("2d", {willReadFrequently: true});
         //# interpolation만 사용한다면 stream api사용할 필요는 없는 듯 함.
         // buildVSRPipleline(srcVideo, dstVideo, createTransform(1920, 1080));
 
@@ -104,7 +106,7 @@
 
             // dst tensor to dst_mat
             dst_mat.data.set(sr.dataSync());
-            cv.imshow("exp_video", dst_mat);
+            cv.imshow(expVideo, dst_mat);
           });
 
           tensor.dispose();
